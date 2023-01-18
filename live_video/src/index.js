@@ -15,28 +15,28 @@
  * =============================================================================
  */
 
-import '@tensorflow/tfjs-backend-webgl';
-import '@tensorflow/tfjs-backend-webgpu';
-import * as mpPose from '@mediapipe/pose';
+import "@tensorflow/tfjs-backend-webgl";
+import "@tensorflow/tfjs-backend-webgpu";
+import * as mpPose from "@mediapipe/pose";
 
-import * as posedetection from '@tensorflow-models/pose-detection';
+import * as posedetection from "@tensorflow-models/pose-detection";
 
-import {Camera} from './camera';
-import {Setup} from './option_panel';
-import {STATE} from './params';
+import { Camera } from "./camera";
+import { Setup } from "./option_panel";
+import { STATE } from "./params";
+import { Render3D } from "./render_3d";
 
 let detector, camera, stats;
 let rafId;
 
 async function createDetector() {
-  const runtime = 'mediapipe'    
-    
+  const runtime = "mediapipe";
+
   return posedetection.createDetector(STATE.model, {
     runtime,
     modelType: STATE.modelConfig.type,
-    solutionPath: `https://cdn.jsdelivr.net/npm/@mediapipe/pose@${mpPose.VERSION}`
+    solutionPath: `https://cdn.jsdelivr.net/npm/@mediapipe/pose@${mpPose.VERSION}`,
   });
-    
 }
 
 async function renderResult() {
@@ -53,13 +53,13 @@ async function renderResult() {
   // Detector can be null if initialization failed (for example when loading
   // from a URL that does not exist).
   if (detector != null) {
-
     // Detectors can throw errors, for example when using custom URLs that
     // contain a model that doesn't provide the expected output.
     try {
-      poses = await detector.estimatePoses(
-          camera.video,
-          {maxPoses: STATE.modelConfig.maxPoses, flipHorizontal: false});
+      poses = await detector.estimatePoses(camera.video, {
+        maxPoses: STATE.modelConfig.maxPoses,
+        flipHorizontal: false,
+      });
     } catch (error) {
       detector.dispose();
       detector = null;
@@ -77,21 +77,49 @@ async function renderResult() {
   }
 }
 
-async function renderPrediction() {  
-  await renderResult();  
+async function renderPrediction() {
+  await renderResult();
 
   rafId = requestAnimationFrame(renderPrediction);
-};
+}
+
+function renderMixamo() {
+  const threeEl = document.getElementById("threejs-mixamo");
+  const { scene, renderer, controls, camera } = new Render3D(threeEl).setup();
+
+  function render() {
+    renderer.render(scene, camera);
+  }
+
+  window.addEventListener(
+    "resize",
+    function () {
+      camera.aspect = threeEl.offsetWidth / threeEl.offsetHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(threeEl.offsetWidth, threeEl.offsetHeight);
+      render();
+    },
+    false
+  );
+
+  function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    render();
+  }
+  animate();
+}
 
 async function app() {
   // Gui content will change depending on which model is in the query string.
   await Setup();
-  
+
   camera = await Camera.setupCamera(STATE.camera);
 
   detector = await createDetector();
 
   renderPrediction();
-};
+  renderMixamo();
+}
 
 app();
