@@ -4,10 +4,41 @@ import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader";
 import Stats from "three/examples/jsm/libs/stats.module";
 const modelPath = require("../models/YBot.fbx");
 
+/*
+mixamo bones
+// head
+mixamorigHead
+mixamorigNeck
+// spine
+mixamorigSpine
+mixamorigSpine1
+mixamorigSpine2
+// left arm
+mixamorigLeftShoulder
+mixamorigLeftArm
+mixamorigLeftForeArm
+mixamorigLeftHand
+// right arm
+mixamorigRightShoulder
+mixamorigRightArm
+mixamorigRightHand
+mixamorigRightForeArm
+// left leg
+mixamorigLeftUpLeg
+mixamorigLeftLeg
+mixamorigLeftToeBase
+// right leg
+mixamorigRightUpLeg
+mixamorigRightLeg
+mixamorigRightToeBase
+*/
+
 export class Render3D {
   constructor(targetElement) {
     this.targetElement = targetElement;
     this.scene = new THREE.Scene();
+    this.bones = {};
+    this.originalBones = {};
   }
 
   setup() {
@@ -80,10 +111,32 @@ export class Render3D {
     const fbxLoader = new FBXLoader();
     fbxLoader.load(
       modelPath,
-      (object) => {
-        object.scale.set(0.011, 0.011, 0.011);
-        object.position.set(0.5, 0, 0.5);
-        this.scene.add(object);
+      (fbx) => {
+        fbx.scale.set(0.011, 0.011, 0.011);
+        fbx.position.set(0.5, 0, 0.5);
+        this.scene.add(fbx);
+
+        const model = fbx.children
+          .find((child) => child.name === "Alpha_Joints")
+          .clone();
+        model.position.x = -1;
+
+        const bones = model.skeleton.bones;
+        for (let index = 0; index < bones.length; index++) {
+          const bone = bones[index];
+          this.bones[bone.name] = bone;
+        }
+        this.scene.add(model);
+        console.log("bones", this.bones);
+
+        const skeleton = new THREE.SkeletonHelper(fbx);
+        skeleton.visible = true; // show skeleton
+        this.scene.add(skeleton);
+
+        console.log("skeleton", skeleton);
+
+        const rotLeftArm = new THREE.Quaternion().set(0, 1, 0, 0);
+        this.setRotation("mixamorigLeftArm", rotLeftArm);
       },
       (xhr) => {
         console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
@@ -92,5 +145,15 @@ export class Render3D {
         console.log(error);
       }
     );
+  }
+
+  setRotation(boneName, quaternion) {
+    if (!this.originalBones[boneName]) {
+      this.originalBones[boneName] = this.bones[boneName].quaternion.clone();
+    }
+    const newQuaternion = this.originalBones[boneName]
+      .clone()
+      .multiply(quaternion);
+    this.bones[boneName].quaternion.slerp(newQuaternion, 1);
   }
 }

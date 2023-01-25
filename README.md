@@ -5,30 +5,37 @@ This package provides multiple state-of-the-art models for running real-time pos
 Currently, we provide 3 model options:
 
 #### MoveNet
+
 [Demo](https://storage.googleapis.com/tfjs-models/demos/pose-detection/index.html?model=movenet)
 
 MoveNet is an ultra fast and accurate model that detects 17 keypoints of a body.
 It can run at 50+ fps on modern laptops and phones.
 
 #### BlazePose:
+
 [Demo](https://storage.googleapis.com/tfjs-models/demos/pose-detection/index.html?model=blazepose)
 
 MediaPipe BlazePose can detect 33 keypoints, in addition to the 17 COCO keypoints,
 it provides additional keypoints for face, hands and feet.
 
 #### PoseNet
+
 [Demo](https://storage.googleapis.com/tfjs-models/demos/pose-detection/index.html?model=posenet)
 
 PoseNet can detect multiple poses, each pose contains 17 keypoints.
 
--------------------------------------------------------------------------------
+---
+
 ## Table of Contents
+
 1. [How to Run It](#how-to-run-it)
 2. [Keypoint Diagram](#keypoint-diagram)
 3. [Example Code and Demos](#example-code-and-demos)
 
--------------------------------------------------------------------------------
+---
+
 ## How to Run It
+
 In general there are two steps:
 
 You first create a detector by choosing one of the models from `SupportedModels`,
@@ -58,6 +65,7 @@ Each keypoint contains x, y, score and name. In addition, MediaPipe BlazePose
 also returns an array of 3D keypoints and a segmentation mask.
 
 Example output:
+
 ```
 [
   {
@@ -121,79 +129,152 @@ and their performance.
 
 [PoseNet Documentation](https://github.com/tensorflow/tfjs-models/tree/master/pose-detection/src/posenet)
 
--------------------------------------------------------------------------------
+---
 
 ## Keypoint Diagram
+
 See the diagram below for what those keypoints are and their index in the array.
 
 ### COCO Keypoints: Used in MoveNet and PoseNet
+
 ![COCO Keypoints](https://storage.googleapis.com/movenet/coco-keypoints-500.png)
 
-
-0: nose  \
-1: left_eye  \
-2: right_eye  \
-3: left_ear  \
-4: right_ear  \
-5: left_shoulder  \
-6: right_shoulder  \
-7: left_elbow  \
-8: right_elbow  \
-9: left_wrist  \
-10: right_wrist  \
-11: left_hip  \
-12: right_hip  \
-13: left_knee  \
-14: right_knee  \
-15: left_ankle  \
+0: nose \
+1: left_eye \
+2: right_eye \
+3: left_ear \
+4: right_ear \
+5: left_shoulder \
+6: right_shoulder \
+7: left_elbow \
+8: right_elbow \
+9: left_wrist \
+10: right_wrist \
+11: left_hip \
+12: right_hip \
+13: left_knee \
+14: right_knee \
+15: left_ankle \
 16: right_ankle
 
 ### BlazePose Keypoints: Used in MediaPipe BlazePose
+
 ![BlazePose Keypoints](https://storage.googleapis.com/mediapipe/blazepose-keypoints-updated.png)
 
-0: nose  \
+0: nose \
 1: left_eye_inner \
-2: left_eye  \
-3: left_eye_outer  \
-4: right_eye_inner  \
-5: right_eye  \
-6: right_eye_outer  \
-7: left_ear  \
-8: right_ear  \
-9: mouth_left  \
-10: mouth_right  \
-11: left_shoulder  \
-12: right_shoulder  \
-13: left_elbow  \
-14: right_elbow  \
-15: left_wrist  \
-16: right_wrist  \
-17: left_pinky  \
-18: right_pinky  \
-19: left_index  \
-20: right_index  \
-21: left_thumb  \
-22: right_thumb  \
-23: left_hip  \
-24: right_hip  \
-25: left_knee  \
-26: right_knee  \
-27: left_ankle  \
-28: right_ankle  \
-29: left_heel  \
-30: right_heel  \
-31: left_foot_index  \
-32: right_foot_index  \
-33: bodyCenter  \
-34: forehead  \
+2: left_eye \
+3: left_eye_outer \
+4: right_eye_inner \
+5: right_eye \
+6: right_eye_outer \
+7: left_ear \
+8: right_ear \
+9: mouth_left \
+10: mouth_right \
+11: left_shoulder \
+12: right_shoulder \
+13: left_elbow \
+14: right_elbow \
+15: left_wrist \
+16: right_wrist \
+17: left_pinky \
+18: right_pinky \
+19: left_index \
+20: right_index \
+21: left_thumb \
+22: right_thumb \
+23: left_hip \
+24: right_hip \
+25: left_knee \
+26: right_knee \
+27: left_ankle \
+28: right_ankle \
+29: left_heel \
+30: right_heel \
+31: left_foot_index \
+32: right_foot_index \
+33: bodyCenter \
+34: forehead \
 35: leftThumb \
-36: leftHand  \
-37: rightThumb  \
-38: rightHand \
+36: leftHand \
+37: rightThumb \
+38: rightHand
 
--------------------------------------------------------------------------------
+### Mixamo Bones: Used extract Mixamo Bones
+
+mixamorigHips \
+mixamorigSpine \
+mixamorigSpine1 \
+mixamorigSpine2 \
+mixamorigNeck \
+mixamorigHead \
+mixamorigHeadTop_End \
+mixamorigLeftEye \
+mixamorigRightEye \
+mixamorigLeftShoulder \
+mixamorigLeftArm \
+mixamorigLeftForeArm \
+mixamorigLeftHand \
+mixamorigLeftHandThumb1 \
+mixamorigLeftHandThumb2 \
+mixamorigLeftHandThumb3 \
+mixamorigLeftHandThumb4 \
+mixamorigLeftHandIndex1 \
+mixamorigLeftHandIndex2 \
+mixamorigLeftHandIndex3 \
+mixamorigLeftHandIndex4 \
+mixamorigLeftHandMiddle1 \
+mixamorigLeftHandMiddle2 \
+mixamorigLeftHandMiddle3 \
+mixamorigLeftHandMiddle4 \
+mixamorigLeftHandRing1 \
+mixamorigLeftHandRing2 \
+mixamorigLeftHandRing3 \
+mixamorigLeftHandRing4 \
+mixamorigLeftHandPinky1 \
+mixamorigLeftHandPinky2 \
+mixamorigLeftHandPinky3 \
+mixamorigLeftHandPinky4 \
+mixamorigRightShoulder \
+mixamorigRightArm \
+mixamorigRightForeArm \
+mixamorigRightHand \
+mixamorigRightHandPinky1 \
+mixamorigRightHandPinky2 \
+mixamorigRightHandPinky3 \
+mixamorigRightHandPinky4 \
+mixamorigRightHandRing1 \
+mixamorigRightHandRing2 \
+mixamorigRightHandRing3 \
+mixamorigRightHandRing4 \
+mixamorigRightHandMiddle1 \
+mixamorigRightHandMiddle2 \
+mixamorigRightHandMiddle3 \
+mixamorigRightHandMiddle4 \
+mixamorigRightHandIndex1 \
+mixamorigRightHandIndex2 \
+mixamorigRightHandIndex3 \
+mixamorigRightHandIndex4 \
+mixamorigRightHandThumb1 \
+mixamorigRightHandThumb2 \
+mixamorigRightHandThumb3 \
+mixamorigRightHandThumb4 \
+mixamorigLeftUpLeg \
+mixamorigLeftLeg \
+mixamorigLeftFoot \
+mixamorigLeftToeBase \
+mixamorigLeftToe_End \
+mixamorigRightUpLeg \
+mixamorigRightLeg \
+mixamorigRightFoot \
+mixamorigRightToeBase \
+mixamorigRightToe_End
+
+---
 
 ## Example Code and Demos
+
 You may reference the demos for code examples. Details for how to run the demos
 are included in the `demos/`
 [folder](https://github.com/tensorflow/tfjs-models/tree/master/pose-detection/demos).
