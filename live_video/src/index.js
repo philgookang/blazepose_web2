@@ -83,7 +83,7 @@ async function renderPrediction() {
   rafId = requestAnimationFrame(renderPrediction);
 }
 
-function renderMixamo() {
+async function renderMixamo() {
   const threeEl = document.getElementById("threejs-mixamo");
   const { scene, renderer, controls, camera } = new Render3D(threeEl).setup();
 
@@ -118,8 +118,8 @@ async function app() {
 
   detector = await createDetector();
 
-  renderPrediction();
-  renderMixamo();
+  await renderPrediction();
+  await renderMixamo();
 }
 
 app();
