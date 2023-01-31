@@ -21,10 +21,15 @@ import * as mpPose from "@mediapipe/pose";
 
 import * as posedetection from "@tensorflow-models/pose-detection";
 
+import * as THREE from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader";
+
+const modelPath = require("../models/YBot.fbx");
+
 import { Camera } from "./camera";
 import { Setup } from "./option_panel";
 import { STATE } from "./params";
-import { Render3D } from "./render_3d";
 
 let detector, camera, stats;
 let rafId;
@@ -83,31 +88,114 @@ async function renderPrediction() {
   rafId = requestAnimationFrame(renderPrediction);
 }
 
-async function renderMixamo() {
-  const threeEl = document.getElementById("threejs-mixamo");
-  const { scene, renderer, controls, camera } = new Render3D(threeEl).setup();
+let bones = {};
+let scene, renderer, controls, threeCamera;
+function renderThree() {
+  scene = new THREE.Scene();
+  scene.add(new THREE.AxesHelper(5));
+  scene.background = new THREE.Color(0xffffff);
 
-  function render() {
-    renderer.render(scene, camera);
-  }
+  const light = new THREE.PointLight();
+  light.position.set(0.8, 1.4, 1.0);
+  scene.add(light);
+
+  const ambientLight = new THREE.AmbientLight();
+  scene.add(ambientLight);
+
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(100, 100),
+    new THREE.MeshPhongMaterial({ color: 0x999999, depthWrite: false })
+  );
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.receiveShadow = true;
+  scene.add(mesh);
+
+  threeCamera = new THREE.PerspectiveCamera(
+    45,
+    window.innerWidth / window.innerHeight,
+    1,
+    100
+  );
+  threeCamera.position.set(-2, 2, 3);
+
+  const threeEl = document.getElementById("threejs-mixamo");
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize(threeEl.offsetWidth, threeEl.offsetHeight);
+  threeEl.appendChild(renderer.domElement);
+
+  controls = new OrbitControls(threeCamera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.target.set(0, 1, 0);
+
+  const fbxLoader = new FBXLoader();
+  fbxLoader.load(
+    modelPath,
+    (fbx) => {
+      fbx.scale.set(0.011, 0.011, 0.011);
+      fbx.position.set(0.5, 0, 0.5);
+      scene.add(fbx);
+
+      const model = fbx.children
+        .find((child) => child.name === "Alpha_Joints")
+        .clone();
+      model.position.x = -1;
+
+      const modelBones = model.skeleton.bones;
+      for (let index = 0; index < modelBones.length; index++) {
+        const bone = modelBones[index];
+        bones[bone.name] = bone;
+      }
+      scene.add(model);
+      console.log("bones", bones);
+
+      const skeleton = new THREE.SkeletonHelper(fbx);
+      skeleton.visible = true; // show skeleton
+      scene.add(skeleton);
+
+      console.log("skeleton", skeleton);
+    },
+    (xhr) => {
+      console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
+    },
+    (error) => {
+      console.log(error);
+    }
+  );
 
   window.addEventListener(
     "resize",
     function () {
-      camera.aspect = threeEl.offsetWidth / threeEl.offsetHeight;
-      camera.updateProjectionMatrix();
+      threeCamera.aspect = threeEl.offsetWidth / threeEl.offsetHeight;
+      threeCamera.updateProjectionMatrix();
       renderer.setSize(threeEl.offsetWidth, threeEl.offsetHeight);
-      render();
+      renderer.render(scene, threeCamera);
     },
     false
   );
+}
 
-  function animate() {
-    requestAnimationFrame(animate);
-    controls.update();
-    render();
+const originalBones = {};
+function setRotation(boneName, quaternion) {
+  if (!bones[boneName]) return;
+  if (!originalBones[boneName]) {
+    originalBones[boneName] = bones[boneName].quaternion.clone();
   }
-  animate();
+  const newQuaternion = originalBones[boneName]
+    .clone()
+    .multiply(quaternion)
+    .normalize();
+  bones[boneName].quaternion.slerp(newQuaternion, 1);
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  const quaternion = new THREE.Quaternion();
+  setRotation(
+    "mixamorigLeftArm",
+    quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2)
+  );
+  renderer.render(scene, threeCamera);
 }
 
 async function app() {
@@ -119,7 +207,9 @@ async function app() {
   detector = await createDetector();
 
   await renderPrediction();
-  await renderMixamo();
+
+  renderThree();
+  animate();
 }
 
 app();
