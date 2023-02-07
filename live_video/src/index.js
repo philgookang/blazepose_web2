@@ -23,16 +23,16 @@ import * as posedetection from "@tensorflow-models/pose-detection";
 
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import * as SkeletonUtils from "three/examples/jsm/utils/SkeletonUtils";
 
-const modelPath = require("../models/YBot.fbx");
+const modelPath = require("../models/y_bot.glb");
 
 import { Camera } from "./camera";
 import { Setup } from "./option_panel";
 import { STATE } from "./params";
 
-let detector, camera, stats;
-let rafId;
+let detector, camera, rafId;
 
 async function createDetector() {
   const runtime = "mediapipe";
@@ -89,7 +89,7 @@ async function renderPrediction() {
 }
 
 let bones = {};
-let scene, renderer, controls, threeCamera;
+let scene, renderer, controls, threeCamera, model;
 function renderThree() {
   scene = new THREE.Scene();
   scene.add(new THREE.AxesHelper(5));
@@ -113,52 +113,37 @@ function renderThree() {
   threeCamera = new THREE.PerspectiveCamera(
     45,
     window.innerWidth / window.innerHeight,
-    1,
-    100
+    0.01,
+    10
   );
-  threeCamera.position.set(-2, 2, 3);
+  threeCamera.position.set(2, 2, -2);
 
   const threeEl = document.getElementById("threejs-mixamo");
-  renderer = new THREE.WebGLRenderer();
+  renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(threeEl.offsetWidth, threeEl.offsetHeight);
   threeEl.appendChild(renderer.domElement);
 
   controls = new OrbitControls(threeCamera, renderer.domElement);
   controls.enableDamping = true;
   controls.target.set(0, 1, 0);
+  controls.update();
 
-  const fbxLoader = new FBXLoader();
-  fbxLoader.load(
-    modelPath,
-    (fbx) => {
-      fbx.scale.set(0.011, 0.011, 0.011);
-      fbx.position.set(0.5, 0, 0.5);
-      scene.add(fbx);
+  const gltfLoader = new GLTFLoader();
+  gltfLoader.load(
+    "https://threejs.org/examples/models/gltf/Xbot.glb",
+    (gltf) => {
+      gltf.scene.traverse(function (object) {
+        if (object.isMesh) object.castShadow = true;
+      });
 
-      const model = fbx.children
-        .find((child) => child.name === "Alpha_Joints")
-        .clone();
-      model.position.x = -1;
-
-      const modelBones = model.skeleton.bones;
-      for (let index = 0; index < modelBones.length; index++) {
-        const bone = modelBones[index];
-        bones[bone.name] = bone;
-      }
-      scene.add(model);
+      model = SkeletonUtils.clone(gltf.scene);
+      model.traverse(function (object) {
+        if (object.isBone) {
+          bones[object.name] = object;
+        }
+      });
       console.log("bones", bones);
-
-      const skeleton = new THREE.SkeletonHelper(fbx);
-      skeleton.visible = true; // show skeleton
-      scene.add(skeleton);
-
-      console.log("skeleton", skeleton);
-    },
-    (xhr) => {
-      console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
-    },
-    (error) => {
-      console.log(error);
+      scene.add(model);
     }
   );
 
@@ -189,7 +174,6 @@ function setRotation(boneName, quaternion) {
 
 function animate() {
   requestAnimationFrame(animate);
-  controls.update();
   const quaternion = new THREE.Quaternion();
   setRotation(
     "mixamorigLeftArm",
