@@ -114,11 +114,11 @@ async function app() {
   // Gui content will change depending on which model is in the query string.
   await Setup();
 
-  camera = await Camera.setupCamera(STATE.camera);
+  // camera = await Camera.setupCamera(STATE.camera);
 
-  detector = await createDetector();
+  // detector = await createDetector();
 
-  await renderPrediction();
+  // await renderPrediction();
   await renderMixamo();
 }
 
