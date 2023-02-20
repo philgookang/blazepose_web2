@@ -23,16 +23,18 @@ import * as posedetection from "@tensorflow-models/pose-detection";
 
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader";
-import { GLTFLoader } from "./GLTFLoader.js";
-const modelPath = require("../models/YBot.fbx");
+
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import * as SkeletonUtils from "three/examples/jsm/utils/SkeletonUtils";
+
+const modelPath = require("../models/y_bot.glb");
+// >>>>>>> 14ca3310bf8fef784248706e88b6a8851878007b
 
 import { Camera } from "./camera";
 import { Setup } from "./option_panel";
 import { STATE } from "./params";
 
-let detector, camera, stats;
-let rafId;
+let detector, camera, rafId;
 
 async function createDetector() {
   const runtime = "mediapipe";
@@ -89,7 +91,7 @@ async function renderPrediction() {
 }
 
 let bones = {};
-let scene, renderer, controls, threeCamera;
+let scene, renderer, controls, threeCamera, model;
 function renderThree() {
   scene = new THREE.Scene();
   scene.add(new THREE.AxesHelper(5));
@@ -113,53 +115,55 @@ function renderThree() {
   threeCamera = new THREE.PerspectiveCamera(
     45,
     window.innerWidth / window.innerHeight,
-    1,
-    100
+    0.01,
+    10
   );
-  threeCamera.position.set(-2, 2, 3);
+  threeCamera.position.set(2, 2, -2);
 
   const threeEl = document.getElementById("threejs-mixamo");
-  renderer = new THREE.WebGLRenderer();
+  renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(threeEl.offsetWidth, threeEl.offsetHeight);
   threeEl.appendChild(renderer.domElement);
 
   controls = new OrbitControls(threeCamera, renderer.domElement);
   controls.enableDamping = true;
   controls.target.set(0, 1, 0);
+  controls.update();
 
-  const loader = new GLTFLoader();
-  loader.load("models/gltf/Xbot.glb", (gltf) => {
-    // TODO remove unnecessary joints
-    gltf.scene.traverse(function (object) {
-      if (object.isMesh) object.castShadow = true;
-    });
+// <<<<<<< HEAD
+//   const loader = new GLTFLoader();
+//   loader.load("models/gltf/Xbot.glb", (gltf) => {
+//     // TODO remove unnecessary joints
+//     gltf.scene.traverse(function (object) {
+//       if (object.isMesh) object.castShadow = true;
+//     });
 
-    // model = gltf.scene;
-    model = SkeletonUtils.clone(gltf.scene);
-    model.position.x = -1;
-    model2 = SkeletonUtils.clone(gltf.scene);
-    model2.position.x = 2;
+//     // model = gltf.scene;
+//     model = SkeletonUtils.clone(gltf.scene);
+//     model.position.x = -1;
+//     model2 = SkeletonUtils.clone(gltf.scene);
+//     model2.position.x = 2;
 
-    model.traverse(function (object) {
-      if (object.isBone) {
-        bones[object.name] = object;
-      }
-    });
+//     model.traverse(function (object) {
+//       if (object.isBone) {
+//         bones[object.name] = object;
+//       }
+//     });
 
-    scene.add(model);
-    scene.add(model2);
+//     scene.add(model);
+//     scene.add(model2);
 
-    let skeleton;
-    skeleton = new THREE.SkeletonHelper(model);
-    skeleton.visible = true; // show skeleton
-    scene.add(skeleton);
+//     let skeleton;
+//     skeleton = new THREE.SkeletonHelper(model);
+//     skeleton.visible = true; // show skeleton
+//     scene.add(skeleton);
 
-    skeleton = new THREE.SkeletonHelper(model2);
-    skeleton.visible = true; // show skeleton
-    scene.add(skeleton);
+//     skeleton = new THREE.SkeletonHelper(model2);
+//     skeleton.visible = true; // show skeleton
+//     scene.add(skeleton);
 
-    console.log("skeleton", skeleton)
-  });
+//     console.log("skeleton", skeleton)
+//   });
 
 
   // const fbxLoader = new FBXLoader();
@@ -196,6 +200,26 @@ function renderThree() {
   //     console.log(error);
   //   }
   // );
+// =======
+  const gltfLoader = new GLTFLoader();
+  gltfLoader.load(
+    "https://threejs.org/examples/models/gltf/Xbot.glb",
+    (gltf) => {
+      gltf.scene.traverse(function (object) {
+        if (object.isMesh) object.castShadow = true;
+      });
+
+      model = SkeletonUtils.clone(gltf.scene);
+      model.traverse(function (object) {
+        if (object.isBone) {
+          bones[object.name] = object;
+        }
+      });
+      console.log("bones", bones);
+      scene.add(model);
+    }
+  );
+// >>>>>>> 14ca3310bf8fef784248706e88b6a8851878007b
 
   window.addEventListener(
     "resize",
@@ -319,7 +343,7 @@ function getJointQuaternionAndInversedTransform(v1, v2, parentInverseTransform)
   const inverse_curT = curT.clone().invert().multiply(parentInverseTransform)
 
 
-  return [applyRotOffset(quaternion), inverse_curT]
+  return [(quaternion), inverse_curT]
 };
 
 let poseIndex = 0;
@@ -628,7 +652,6 @@ async function setModelPoseQuaterion()
 
 function animate() {
   requestAnimationFrame(animate);
-  controls.update();
   const quaternion = new THREE.Quaternion();
   // setRotation(
   //   "mixamorigLeftArm",
