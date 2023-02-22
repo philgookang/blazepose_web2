@@ -282,6 +282,8 @@ const BlazePose = {
   right_foot_index: 32,
 };
 
+
+
 const TposeAxis = {
   // spine + spine1
   Hips: new THREE.Vector3(0, 10.181594848632812 + 10.083457946777344,
@@ -347,24 +349,32 @@ function getJointQuaternionAndInversedTransform(v1, v2, parentInverseTransform)
 };
 
 let poseIndex = 0;
+let lastApplied = 0;
+
 async function setModelPoseQuaterion()
 {
-  console.log("bones", bones);
+  const now = new Date().getTime();
+  if (now - lastApplied < 33) return;
+  // console.log("bones", bones);
+  lastApplied = now;
 
+  const motionDir = '/json/litness-data/'
+  const motionTag = '8.lateral_raise'
   poseIndex++;
   if (poseIndex > 119 - 1) {
     poseIndex = 0;
   }
+  // poseIndex = 0;
   // poseIndex = 70;
   console.log("poseIndex", poseIndex);
 
-  const res = await (await fetch('/json/litness-data/1.squat/1.squat_'+String(poseIndex)+'.json')).json();
+  // const res = await (await fetch('/json/litness-data/1.squat/1.squat_'+String(poseIndex)+'.json')).json();
+  const res = await (await fetch(motionDir+motionTag+'/'+motionTag+'_'+String(poseIndex)+'.json')).json();
+  // const res = await (await fetch('/json/litness-data/6.bridge/6.bridge_'+String(poseIndex)+'.json')).json();
+  // const res = await (await fetch('/json/litness-data/7.shoulder_press/7.shoulder_press_'+String(poseIndex)+'.json')).json();
 
   const pos = res.pose
-  console.log("pos", pos);
-
-
-
+  // console.log("pos", pos);
 
 
 
@@ -479,7 +489,7 @@ async function setModelPoseQuaterion()
   right_foot_index.z *= -1
 
 
-  const pelivs = getCenter(left_hip, right_hip)
+  const pelvis = getCenter(left_hip, right_hip)
 
   const neck = getCenter(left_shoulder, right_shoulder)
   const head = getCenter(left_ear, right_ear)
@@ -487,10 +497,163 @@ async function setModelPoseQuaterion()
   const left_hand = getCenter(left_pinky, left_index)
   const right_hand = getCenter(right_pinky, right_index)
 
+  // console.log("pelvis", pelvis)
+  // console.log("neck", neck)
+
+  // standing Position(lateral_raise pose, at frame 21 (T pose))
+  // pelvis :  x: -0.0001741275191307068, y: 0.00012016855180263519, z: -0.00032228603959083557
+  // neck:     x: 0.01930684596300125, y: 0.5306624174118042, z: 0.056955426931381226
+
+  const skelSpineLength = 0.53
+
+
+  // console.log("mixamorigHips", bones["mixamorigHips"])
+  // //x: 0, y: 103.99, z: 2.08
+  // console.log("mixamorigSpine", bones["mixamorigSpine"])
+  // //x: 0 y: 10.18, z: 0.13
+  // console.log("mixamorigSpine1", bones["mixamorigSpine1"])
+  // //x: 0, y: 10.08, z: -1.00
+  // console.log("mixamorigSpine2", bones["mixamorigSpine2"])
+  // //x: 0, y: 9.10, z: -1.37
+  // console.log("mixamorigNeck", bones["mixamorigNeck"])
+  // //x: 0, y: 16.67, z: -2.52
+
+  var spineLength = 10.18
+  var spine1Length = 10.08
+  var spine2Length = 9.10
+  var neckLength = 16.67
+
+
+  const totalSpineLength = spineLength+spine1Length+spine2Length+neckLength
+
+  spineLength *= skelSpineLength / totalSpineLength
+  spine1Length *= skelSpineLength / totalSpineLength
+  spine2Length *= skelSpineLength / totalSpineLength
+  neckLength *= skelSpineLength / totalSpineLength
+
+
+  //compute inout of spine. when the legs are front of spine, the abdomen goes back.
+  const spineVec = neck.clone().sub(pelvis)
+
+  const leftVec = left_hip.clone().sub(right_hip).normalize()
+
+  const frontVec = leftVec.clone().cross(spineVec)
+
+  const legVec = getCenter(left_knee, right_knee)
+
+  const inout = frontVec.clone().dot(legVec)
+  
+  console.log("inout", inout)
+  // if inout >0 the abdomen goes back, otherwise, goes front
+
+  const curSpineLength = Math.min(totalSpineLength, spineVec.length())
+
+  // curSpineLength
+
+
+
+  // original plane angle
+  leftVec.normalize()
+  spineVec.normalize()
+
+  const targetPlaneAngle = Math.atan2(leftVec.clone().cross(spineVec).length(), leftVec.clone().dot(spineVec))
+  console.log("targetPlaneAngle", targetPlaneAngle)
+
+  // calculate inout angle
+  const cos = Math.cos;
+  const sin = Math.sin;
+
+  var angle = Math.PI/3
+  var upper = angle
+  var lower = 0.0
+
+  angle = (upper+lower)/2.0
+
+
+  var count = 0;
+  while( true ){
+    const neck_x =                -(sin(angle)*spine1Length + sin(2*angle)*spine2Length + sin(3*angle)*neckLength)
+    const neck_y = spineLength + cos(angle)*spine1Length + cos(2*angle)*spine2Length + cos(3*angle)*neckLength
+
+    if(Math.abs(neck_x*neck_x + neck_y*neck_y - curSpineLength*curSpineLength) < 1e-4){
+      break;
+    }
+
+    if(neck_x*neck_x + neck_y*neck_y - curSpineLength*curSpineLength < 0){
+      upper = (upper + lower) / 2.0;
+    }
+    else
+    {
+      lower = (upper + lower) / 2.0;
+    }
+    angle = (upper+lower)/2.0
+    count++;
+    if(count >= 10)
+    {
+      // console.log("maximum!")
+      break;
+    }
+  }
+
+  const neck_x =              -(sin(angle)*spine1Length + sin(2*angle)*spine2Length + sin(3*angle)*neckLength)
+  const neck_y = spineLength + cos(angle)*spine1Length + cos(2*angle)*spine2Length + cos(3*angle)*neckLength
+
+  const rotatedRootAngle = Math.atan2(neck_y, neck_x) - Math.PI /2.0
+
+  // console.log("rotatedRootAngle", rotatedRootAngle)
+
+  const planeSpine1 = cos(angle)*spine1Length;
+  const planeSpine2 = cos(2*angle)*spine2Length;
+  const planeNeck = cos(3*angle)*neckLength;
+
+  var planeAngle = Math.PI/4
+  var upper = planeAngle
+  var lower = -planeAngle
+  planeAngle = (upper+lower)/2.0
+
+  var planeCount = 0
+  while( true ){
+    const neck_x =                -(sin(planeAngle)*planeSpine1 + sin(2*planeAngle)*planeSpine2 + sin(3*planeAngle)*planeNeck)
+    const neck_y = spineLength*cos(rotatedRootAngle) + cos(planeAngle)*planeSpine1 + cos(2*planeAngle)*planeSpine2 + cos(3*planeAngle)*planeNeck
+
+
+    const curPlaneAngle = Math.atan2(neck_y, neck_x)
+
+    if(Math.abs(targetPlaneAngle - curPlaneAngle) < 1e-3){
+      break;
+    }
+
+    if(targetPlaneAngle - curPlaneAngle < 0){
+      upper = (upper + lower) / 2.0;
+    }
+    else
+    {
+      lower = (upper + lower) / 2.0;
+    }
+    planeAngle = (upper+lower)/2.0
+    planeCount++;
+    if(planeCount >= 10)
+    {
+      // console.log("maximum!")
+      break;
+    }
+
+    // console.log("curPlaneAngle", curPlaneAngle)
+  }
+
+  console.log("angle", angle)
+  console.log("planeAngle", planeAngle)
+
+
+
+  // console.log("curSpineLength", curSpineLength)
+  // console.log("angle", angle)
+
+  // console.log("------")
 
   const HipsT = new THREE.Matrix4()
   const Hips_x = left_hip.clone().sub(right_hip).normalize()
-  const Hips_y = neck.clone().sub(pelivs).normalize()
+  const Hips_y = neck.clone().sub(pelvis).normalize()
   const Hips_z = Hips_x.clone().cross(Hips_y).normalize()
   const new_Hips_x = Hips_y.clone().cross(Hips_z).normalize()
 
@@ -498,6 +661,7 @@ async function setModelPoseQuaterion()
   const HipsQuaternion = new THREE.Quaternion()
 
   HipsQuaternion.setFromRotationMatrix(HipsT)
+  
   setRotation("mixamorigHips", HipsQuaternion);
 
   const inverse_HipsT = HipsT.clone().invert()
@@ -507,7 +671,7 @@ async function setModelPoseQuaterion()
 
   var SpineT = new THREE.Matrix4()
   const Spine_x = left_shoulder.clone().sub(right_shoulder).normalize()
-  const Spine_y = neck.clone().sub(pelivs).normalize()
+  const Spine_y = neck.clone().sub(pelvis).normalize()
   const Spine_z = Spine_x.clone().cross(Spine_y).normalize()
   const new_Spine_x = Spine_y.clone().cross(Spine_z).normalize()
 
@@ -646,6 +810,8 @@ async function setModelPoseQuaterion()
       lowestHeight = bones[key].matrixWorld.elements[13]
     }
   }
+  const offset = new THREE.Vector3(0, -lowestHeight*100.0, 0)
+  bones["mixamorigHips"].position.add(offset)
 
 }
 
