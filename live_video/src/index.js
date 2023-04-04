@@ -215,7 +215,7 @@ function renderThree() {
           bones[object.name] = object;
         }
       });
-      console.log("bones", bones);
+      // console.log("bones", bones);
       scene.add(model);
     }
   );
@@ -342,13 +342,13 @@ async function setModelPoseQuaterion()
   lastApplied = now;
 
   const motionDir = '/json/litness-data/'
-  // const motionTag = '1.squat'
+  const motionTag = '1.squat'
   // const motionTag = '2.lunge'
   // const motionTag = '3.pushup'
   // const motionTag = '4.bird_dog'
   // const motionTag = '5.plank'
   // const motionTag = '6.bridge'
-  const motionTag = '7.shoulder_press'
+  // const motionTag = '7.shoulder_press'
   // const motionTag = '8.lateral_raise'
   // const motionTag = '9.side_knee_up'
   // const motionTag = '10.mountain_climber'
@@ -372,7 +372,7 @@ async function setModelPoseQuaterion()
   }
   // poseIndex = 0;
   // poseIndex = 70;
-  console.log("poseIndex", poseIndex);
+  // console.log("poseIndex", poseIndex);
 
   const res = await (await fetch(motionDir+motionTag+'/'+motionTag+'_'+String(poseIndex)+'.json')).json();
 
@@ -530,7 +530,7 @@ async function setModelPoseQuaterion()
 
   const inout = frontVec.clone().dot(legVec)
   
-  console.log("inout", inout)
+  // console.log("inout", inout)
   // if inout >0 the abdomen goes back, otherwise, goes front
 
   const curSpineLength = Math.min(skelSpineLength, spineVec.length())
@@ -587,7 +587,7 @@ async function setModelPoseQuaterion()
 
   var rotatedRootAngle = -(Math.atan2(neck_y, neck_z) - Math.PI /2.0)
 
-  console.log("rotatedRootAngle", rotatedRootAngle)
+  // console.log("rotatedRootAngle", rotatedRootAngle)
 
   const planeSpine = cos(rotatedRootAngle)*spineLength
   const planeSpine1 = cos(rotatedRootAngle+angle)*spine1Length;
@@ -630,9 +630,9 @@ async function setModelPoseQuaterion()
     // console.log("planeAngle", planeAngle)
   }
 
-  console.log("angle", angle)
-  console.log("planeAngle", planeAngle)
-  console.log("inout", inout)
+  // console.log("angle", angle)
+  // console.log("planeAngle", planeAngle)
+  // console.log("inout", inout)
 
   // if(inout < 0)
   // {
@@ -1106,10 +1106,10 @@ async function setModelPoseQuaterion()
                   + skel_left_upLeg.clone().sub(avatar_left_upLeg).length() + skel_left_leg.clone().sub(avatar_left_leg).length()
 
 
-  console.log("sum_torso", sum_torso)
-  console.log("sum_arms", sum_arms)
-  console.log("sum_legs", sum_legs)
-  console.log("sum_total", sum_torso+sum_arms+sum_legs)
+  // console.log("sum_torso", sum_torso)
+  // console.log("sum_arms", sum_arms)
+  // console.log("sum_legs", sum_legs)
+  console.log("mean_error_total", (sum_torso+sum_arms+sum_legs)/10.0)
 
 
   var lowestHeight = 1000.0
@@ -1124,11 +1124,11 @@ async function setModelPoseQuaterion()
 
 
   const end = new Date().getTime()
-  console.log("computation time : ", end-now)
+  // console.log("computation time : ", end-now)
 
 }
 
-
+let now = new Date().getTime();
 function animate() {
   requestAnimationFrame(animate);
   // const quaternion = new THREE.Quaternion();
@@ -1137,6 +1137,9 @@ function animate() {
   //   quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2)
   // );
 
+
+  // console.log("fps : ", 1000/(new Date().getTime() - now))
+  now = new Date().getTime();
   setModelPoseQuaterion()
   renderer.render(scene, threeCamera);
 }
